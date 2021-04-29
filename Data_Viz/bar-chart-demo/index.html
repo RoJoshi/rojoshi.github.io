@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        .chart-container {
+            max-width: 1050px;
+            margin: 0 auto;
+            /* auto centers the div */
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+
+        svg {
+            overflow: visible;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="chart-container">
+        <h1 class="headline">
+            Unemployment Over Time 
+        </h1>
+
+        <svg width="1050px" height="500px">
+            
+        </svg>
+    </div>
+</body>
+
+<!-- add your script blocks at the end -->
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<!-- we're using d3 version 6 (the latest version) for all out work -->
+
+<script>
+    console.log(d3)
+    let width = 1050;
+    let height = 500;
+
+    let svg = d3.select("body")
+        .select("svg")
+
+    console.log(svg)
+
+    //arrays
+    //objects
+    //functions
+    let margin = { top: 10, right: 40, bottom: 10, left: 10 };
+    let x = d3.scaleTime()
+        //.domain(d3.extent(data, function(d) { return d.end }))
+        .range([margin.left+1, width+margin.right])
+
+    let y = d3.scaleLinear()
+        //.domain([0, 3000000])
+        .rangeRound([height, margin.top])
+    var parseTime = d3.timeParse("%d-%b-%y");
+    parseTime(new Date)
+    
+    d3.csv("all_states_grouped.csv").then(function (data) {
+        console.log("loaded")
+
+        data.forEach(d => {
+            d.end = parseTime(d.end)
+            d.value = +d.value
+        })
+        console.log(data)
+
+        // let x = d3.scaleTime()
+        //     .domain(d3.extent(data, function(d) { return d.end }))
+        //     .range([0, width])
+
+        // let y = d3.scaleLinear()
+        //     .domain([0, 3000000])
+        //     .rangeRound([height - margin.bottom, margin.top])
+
+        x.domain(d3.extent(data.map(function(d) { return d.end })))
+        y.domain([0, d3.max(data.map(function(d) { return d.value }))])
+
+        let xTickSettings = d3.axisBottom(x)
+            .tickSize(1)
+            .tickPadding(12)
+            .ticks(d3.timeYear.every(2), "%Y")
+
+        let xAxis = svg.append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(xTickSettings)
+
+        let yAxisSettings = d3.axisLeft(y) //set axis to the left
+            .ticks(7) //approx how many ticks, the function will not necesarily give you that number
+            //.tickSize(-width) //size of tick lines
+            .tickPadding(10) //distance from tick labels to tick marks
+
+        let yAxis = svg.append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(yAxisSettings)
+        //console.log(x.bandwidth)
+
+        let bars = svg.selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .style("fill", "#FF5733")
+            .attr("x", function(d) { return x(d.end); })
+            .attr("width", width/data.length)
+            .attr("y", function(d) { return y(d.value); })
+            .attr("height", function(d) { return height - y(d.value); })
+        
+        var sum = d3.sum(data, function(d) { return d.value; }); 
+        var average = sum/data.length;
+
+        console.log(sum)
+        console.log(average)
+
+        let baseline = svg.append("line")
+            .attr("x1", x(d3.min(data.map(function(d) { return d.end }))))
+            .attr("x2", x(d3.max(data.map(function(d) { return d.end }))))
+            .attr("y1", y(average))
+            .attr("y2", y(average))
+            .style("stroke", "black")
+            .style("stroke-width", "2px")
+
+        svg.append("text")
+            //.attr("transform", "rotate(-90)")
+            .attr("y", y(average)-20)
+            .attr("x", x(d3.max(data.map(function(d) { return d.end })))-150)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Average Unemployment = 342,674.34"); 
+
+        console.log(d3.max(data.map(function(d) { return d.value })))
+
+        svg.append("text")
+            //.attr("transform", "rotate(-90)")
+            .attr("y", y(d3.max(data.map(function(d) { return d.value })))-10)
+            .attr("x", x(d3.max(data.map(function(d) { return d.end })))-40)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("2,883,448"); 
+
+        svg.append("circle")
+            .attr("fill", "red")
+            .attr("stroke", "none")
+            .attr("cy", y(d3.max(data.map(function(d) { return d.value }))))
+            .attr("cx", x(d3.max(data.map(function(d) { return d.end }))))
+            .attr("r", 4)
+    })
+
+</script>
